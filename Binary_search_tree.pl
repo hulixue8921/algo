@@ -24,9 +24,9 @@ use utf8;
 use 5.010;
 use Data::Dumper;
 
-my $tree->{10} = 'data';
-$tree->{left}  = undef;
-$tree->{right} = undef;
+my $Tree->{10} = 'data';
+$Tree->{left}  = undef;
+$Tree->{right} = undef;
 
 sub tree_key {
     my $tree = shift;
@@ -154,51 +154,89 @@ sub Del {
 
     my ( $dnode, $dparents, $dlocation ) = &Search( $tree, $x, [], [] );
 
+    my ( $lnode, $lparents ) = &Left_max( $dnode, 0, [] );
+    my ( $rnode, $rparents ) = &Right_min( $dnode, 0, [] );
 
-     if ( $dnode->{left} ) {
-         my ( $lnode, $lparents ) = &Left_max( $dnode, 0, [] );
-         if ( &tree_key($lparents) eq &tree_key($dnode) ) {
-             $dparents->{$dlocation}=$lnode;
-             $lnode->{right}=$dnode->{right};
-         } else {
-             $dparents->{$dlocation}=$lnode;
-             $lparents->{right}=$lnode->{left};
-             $lnode->{left}=$dnode->{left};
-             $lnode->{right}=$dnode->{right};
-         }
+    my ( $left_first, $left_more, $right_first, $right_more );
 
+    if ($dparents) {
+        $left_first = sub {
+            $dparents->{$dlocation} = $lnode;
+            $lnode->{right} = $dnode->{right};
+        };
+        $left_more = sub {
+            $dparents->{$dlocation} = $lnode;
+            $lparents->{right}      = $lnode->{left};
+            $lnode->{left}          = $dnode->{left};
+            $lnode->{right}         = $dnode->{right};
+        };
+        $right_first = sub {
+            $dparents->{$dlocation} = $rnode;
+            $rnode->{left} = $dnode->{left};
+        };
+        $right_more = sub {
+            $dparents->{$dlocation} = $rnode;
+            $rparents->{left}       = $rnode->{right};
+            $rnode->{right}         = $dnode->{right};
+            $rnode->{left}          = $dnode->{left};
+        };
+    }
+    else {
+        $left_first = sub {
+            $lnode->{right} = $dnode->{right};
+            $Tree = $lnode;
+        };
+        $left_more = sub {
+            $lnode->{right}    = $dnode->{right};
+            $lparents->{right} = $lnode->{left};
+            $lnode->{left}    = $dnode->{left};
+            $Tree              = $lnode;
+        };
+        $right_first = sub {
+            $rnode->{left} = $dnode->{left};
+            $Tree = $rnode;
+        };
+        $right_more = sub {
+            $rnode->{left}    = $dnode->{left};
+            $rparents->{left} = $rnode->{right};
+            $rnode->{right}    = $dnode->{right};
+            $Tree             = $rnode;
+        };
+    }
 
-     } elsif ($dnode->{right}) {
-         my ( $rnode, $rparents ) = &Right_min( $dnode, 0, [] );
-         if ( &tree_key($rparents) eq &tree_key($dnode) ) {
-             $dparents->{$dlocation}=$rnode;
-             $rnode->{left}=$dnode->{left};
-         } else {
-             $dparents->{$dlocation}=$rnode;
-             $rparents->{left}=$rnode->{right};
-             $rnode->{right}=$dnode->{right};
-             $rnode->{left}=$dnode->{left};
-         }
-
-     }else {
-         $dparents->{$dlocation}=undef if $dlocation;
-     }
-    
+    if ( $dnode->{left} ) {
+        if (&tree_key($lparents) eq &tree_key($dnode)) {
+            $left_first->();
+        }
+        else {
+            $left_more->();
+        }
+    }
+    elsif ( $dnode->{right} ) {
+        if (&tree_key($rparents) eq &tree_key($dnode)) {
+            $right_first->();
+        }
+        else {
+            $right_more->();
+        }
+    } else {
+        $dparents->{$dlocation}=undef;
+    }
 
 }
 
-
-&Insert( $tree, 11 );
-&Insert( $tree, 8 );
-&Insert( $tree, 5 );
-&Insert( $tree, 9 );
-&Insert( $tree, 10.5 );
-&Insert( $tree, 15 );
-&Insert( $tree, 4 );
-&Insert( $tree, 7 );
-&Del( $tree, 4 );
-&Del( $tree, 7 );
-&travel($tree);
+&Insert( $Tree, 11 );
+&Insert( $Tree, 8 );
+#&Insert( $Tree, 5 );
+&Insert( $Tree, 9 );
+&Insert( $Tree, 10.5 );
+&Insert( $Tree, 15 );
+&Insert( $Tree, 8.5 );
+&Insert( $Tree, 8.4 );
+&Insert( $Tree, 8.46 );
+&Insert( $Tree, 8.6 );
+&Del( $Tree, 8 );
+&travel($Tree);
 
 =cut
 my ($t)=&Search($tree , 29 ,[]);
